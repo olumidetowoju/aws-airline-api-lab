@@ -1,0 +1,36 @@
+name: Build Docs & Lint
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pandoc
+        run: sudo apt-get update && sudo apt-get install -y pandoc
+
+      - name: Build binder-style PDF
+        run: |
+          mkdir -p docs
+          pandoc -s README.md modules/*.md -o docs/SkyBridge-Airline-API-Lab.pdf
+
+      - name: Upload PDF artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: skybridge-pdf
+          path: docs/SkyBridge-Airline-API-Lab.pdf
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Markdown lint
+        uses: avto-dev/markdown-lint@v1
+        with:
+          config: '{"no-hard-tabs": false}'
