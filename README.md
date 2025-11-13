@@ -305,3 +305,177 @@ Cost governance is an engineering responsibility.
 - Add Config rules & compliance  
 - Add CI/CD with GitHub Actions  
 
+
+# 🛡️ Phase 2 – Security Hardening Journey (Hardening the `/booking` Endpoint)
+
+This section captures how the `/booking` endpoint was transformed from an open, free-to-call Lambda-backed operation into a **fully authenticated, schema-validated, rate-limited, WAF-protected partner integration surface**, following real airline security patterns.
+
+The hardening process was completed in **three phases**, each adding a new layer of protection.
+
+---
+
+## 🔐 Phase 2 Day 1 — API Keys & Usage Plans (Partner-Level Access Control)
+
+We introduced **API keys** as the foundational access control mechanism for external partners:
+
+- Created a **REST API** (`SkyBridge-REST`) specifically for partner integration flows  
+- Added `SkyBridgePartnerKey` API key  
+- Created a `SkyBridgePartnerPlan` usage plan with:
+  - **Throttle rate**: 5 requests/sec  
+  - **Burst limit**: 10 requests  
+- Attached the usage plan to the `/booking` method  
+- Enforced: `apiKeyRequired = true`
+
+**Results:**
+
+- Requests **without** `x-api-key` →  
+  ```json
+  {"message": "Forbidden"}
+Requests with a valid API key →
+Successful booking creation in DynamoDB
+
+This introduced partner identity and throttling, preventing anonymous or abusive traffic.
+
+🧾 Phase 2 Day 2 — Cognito JWT Authentication (User-Level Identity)
+Next, we added user/service authentication via Amazon Cognito:
+
+Created Cognito User Pool: SkyBridgePartnerPool
+
+Added a CLI-friendly client without secret for JWT acquisition
+
+Created test user: partner-user
+
+Obtained JWT using:
+
+bash
+Copy code
+aws cognito-idp initiate-auth ...
+Created a Cognito Authorizer in API Gateway
+
+Attached it to POST /booking
+
+Kept API key requirement active → dual-protection
+
+Security model achieved:
+
+API key → “Is this a valid partner?”
+
+JWT token → “Is this a valid user/service within the partner?”
+
+This matches real-world airline partner authentication, where both partner identity and user identity matter.
+
+Results:
+
+Missing JWT →
+
+json
+Copy code
+{"message":"Unauthorized"}
+Missing API key →
+
+json
+Copy code
+{"message":"Forbidden"}
+Both JWT + API key present → booking succeeds
+
+🧩 Phase 2 Day 3 — Schema Validation (Request Hygiene at the Edge)
+Finally, we ensured only valid, expected request bodies ever reached the Lambda function:
+
+Created BookingRequestModel with JSON schema:
+
+json
+Copy code
+{
+  "agency": "string",
+  "required": ["agency"],
+  "additionalProperties": false
+}
+Created BodyValidator request validator
+
+Attached model + validator to POST /booking
+
+Redeployed the REST API
+
+Results:
+
+Valid body:
+
+json
+Copy code
+{"agency":"SchemaCo"}
+→ booking created successfully
+
+Extra fields:
+
+json
+Copy code
+{"agency":"SchemaCo","extra":"not-allowed"}
+→ blocked with:
+
+json
+Copy code
+{"message": "Invalid request body"}
+Missing fields:
+
+json
+Copy code
+{"wrongField":"oops"}
+→ blocked with:
+
+json
+Copy code
+{"message":"Invalid request body"}
+No Lambda invocation occurs for invalid payloads.
+This eliminates entire classes of input-based attacks, protects DynamoDB from junk writes, and preserves execution cost.
+
+🧷 Combined Protection Summary for /booking
+As of Phase 2 completion, /booking is now protected by:
+
+Identity & Access
+API Key (partner-level auth)
+
+Cognito JWT Authorizer (user/service-level auth)
+
+Input Security
+Strict JSONSchema Validation (API Gateway edge)
+
+Rejects malformed or excessive payloads
+
+Traffic Control
+Usage Plan with throttling & quotas
+
+Prevents partner abuse & accidental traffic spikes
+
+Data Integrity
+DynamoDB writes only occur for validated, authenticated requests
+
+Full Request Flow
+WAF → API Gateway (JWT + API Key + Schema Validation) → Lambda → DynamoDB
+
+This is a genuinely enterprise-grade, production-ready pattern for an airline partner booking API.
+
+🚦 Next Steps (Security Hardening Priority Recommendation)
+Now that /booking is fully hardened, the recommended next move is:
+
+⭐ Harden /loyalty next — the most sensitive API after booking
+Reasons:
+
+Loyalty points = high fraud surface
+
+Easy to validate (member_id, delta)
+
+Perfect candidate for:
+
+API key
+
+JWT
+
+JSON Schema
+
+WAF protection
+
+I can guide you through the /loyalty hardening exactly like we did for /booking.
+
+Just say:
+
+“Proceed to harden /loyalty next”
