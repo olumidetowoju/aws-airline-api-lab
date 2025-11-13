@@ -573,3 +573,105 @@ properly-formed JSON input
 
 passing WAF + usage-plan throttling
 
+
+# 🔐 Secure Airline API Architecture (SkyBridge)
+
+Below is the high-level architecture of the **SkyBridge Airline Partner API Platform**, showing all hardened components including WAF, REST API authorization layers, Lambda microservices, DynamoDB tables, SNS eventing, and governance tools.
+
+```mermaid
+flowchart LR
+  %% Clients
+  subgraph Clients
+    P1[Partner App<br/>Agency Portal]
+    P2[Internal Ops Tool]
+  end
+
+  %% Edge Security
+  P1 --> WAF[WAFv2<br/>SkyBridgeAPIGuard]
+  P2 --> WAF
+
+  %% REST API (Hardened Partner Surface)
+  WAF --> RESTAPI[API Gateway REST API<br/>SkyBridge-REST<br/>/prod]
+
+  %% Auth Layers
+  subgraph AuthNAuthZ[Authentication & Authorization]
+    direction TB
+    AK[API Keys & Usage Plan<br/>SkyBridgePartnerPlan]
+    JWT[Cognito User Pool<br/>SkyBridgePartnerPool]
+  end
+
+  RESTAPI -->|x-api-key| AK
+  RESTAPI -->|Authorization: Bearer JWT| JWT
+
+  %% Booking & Loyalty Routes
+  subgraph PartnerEndpoints[Protected Partner Endpoints]
+    direction TB
+    BKG[/POST /booking/]
+    LOY[/POST /loyalty/]
+  end
+
+  RESTAPI --> BKG
+  RESTAPI --> LOY
+
+  %% Lambda Functions
+  subgraph LambdaLayer[Lambda Functions]
+    direction TB
+    L_BOOKING[Lambda<br/>skybridge-booking]
+    L_LOYALTY[Lambda<br/>skybridge-loyalty]
+    L_FLIGHT[Lambda<br/>skybridge-get-flight]
+    L_TICKET[Lambda<br/>skybridge-issue-ticket/checkin]
+    L_BAG[Lambda<br/>skybridge-baggage-track]
+  end
+
+  BKG --> L_BOOKING
+  LOY --> L_LOYALTY
+
+  %% Data Stores
+  subgraph DataLayer[Data Layer (DynamoDB)]
+    direction TB
+    DDB_BOOK[skybridge-bookings]
+    DDB_LOY[skybridge-loyalty]
+    DDB_FLT[skybridge-flights]
+    DDB_ORD[skybridge-orders]
+    DDB_BAG[skybridge-baggage]
+  end
+
+  L_BOOKING --> DDB_BOOK
+  L_LOYALTY --> DDB_LOY
+  L_FLIGHT --> DDB_FLT
+  L_TICKET --> DDB_ORD
+  L_BAG --> DDB_BAG
+
+  %% Events
+  subgraph Events[Eventing & Notifications]
+    SNS_BAG[SNS Topic<br/>skybridge-baggage-events]
+  end
+
+  L_BAG --> SNS_BAG
+
+  %% Observability & Governance
+  subgraph Observability[Monitoring & Governance]
+    CW[CloudWatch Logs & Alarms]
+    CFG[AWS Config<br/>Resource Recording]
+    BUD[AWS Budgets<br/>SkyBridge-FreeTier-Guard]
+  end
+
+  L_BOOKING --> CW
+  L_LOYALTY --> CW
+  L_FLIGHT --> CW
+  L_TICKET --> CW
+  L_BAG --> CW
+
+  RESTAPI --> CW
+  RESTAPI --> CFG
+  RESTAPI --> BUD
+
+  %% HTTP API (Phase 1 labs)
+  subgraph LegacySurface[HTTP API (Lab Surface)]
+    HTTPAPI[API Gateway HTTP API<br/>SkyBridge HTTP]
+  end
+
+  P1 --> HTTPAPI
+  HTTPAPI --> L_FLIGHT
+  HTTPAPI --> L_TICKET
+  HTTPAPI --> L_BAG
