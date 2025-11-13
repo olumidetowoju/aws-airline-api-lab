@@ -675,3 +675,42 @@ flowchart LR
   HTTPAPI --> L_FLIGHT
   HTTPAPI --> L_TICKET
   HTTPAPI --> L_BAG
+
+## 🔐 Secure Booking Flow (Mermaid Sequence Diagram)
+
+The diagram below illustrates the **full secure request path** for the hardened `/booking` endpoint.  
+It highlights WAF protections, API Gateway validation layers, Cognito JWT authentication, API key enforcement, Lambda execution, DynamoDB persistence, and CloudWatch logging.
+
+```mermaid
+sequenceDiagram
+    autonumber
+
+    participant C as Client / Partner App
+    participant W as AWS WAF
+    participant A as API Gateway (REST API)
+    participant J as Cognito JWT Authorizer
+    participant K as API Key Validator
+    participant V as Schema Validator
+    participant L as Lambda<br/>skybridge-booking
+    participant D as DynamoDB<br/>skybridge-bookings
+    participant CW as CloudWatch Logs
+
+    C->>W: HTTPS Request (POST /booking)
+    W-->>C: Block if malicious traffic (SQLi, XSS, bots)
+
+    W->>A: Forward clean request
+    A->>J: Validate JWT (Authorization: Bearer ...)
+    J-->>A: Success or Unauthorized
+
+    A->>K: Validate API Key (x-api-key)
+    K-->>A: Success or Forbidden
+
+    A->>V: Validate JSON Schema<br/>{"agency": "string"}
+    V-->>A: Valid? If invalid → 400 Error
+
+    A->>L: Invoke Lambda (AWS_PROXY Integration)
+    L->>D: PutItem (Create Booking)
+    D-->>L: OK
+
+    L->>CW: Log booking event
+    A-->>C: 201 Created<br/>{"booking_id": "...", "status": "CREATED"}
