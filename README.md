@@ -479,3 +479,97 @@ I can guide you through the /loyalty hardening exactly like we did for /booking.
 Just say:
 
 “Proceed to harden /loyalty next”
+
+## 🎯 Hardening the `/loyalty` Endpoint (Loyalty Points Protection)
+
+After securing `/booking`, the next priority was `/loyalty`, because loyalty-points manipulation is one of the highest-risk operations in a real airline system.
+
+We hardened `/loyalty` using the same layered approach as `/booking`:
+
+---
+
+### 🔑 Identity & Access Control
+
+- Added a **REST API resource** for `/loyalty`
+- Required **API keys** (`x-api-key`)
+- Attached the REST `prod` stage to the **SkyBridgePartnerPlan** usage plan
+- Reused the Cognito **JWT authorizer**, meaning `/loyalty` now requires:
+  - a valid **JWT** (`Authorization: Bearer <token>`)
+  - a valid **API key** (`x-api-key: <key>`)
+
+This ensures only authenticated, authorized partner users/services can adjust loyalty balances.
+
+---
+
+### 📊 Business Logic Validation
+
+The `skybridge-loyalty` Lambda enforces:
+
+- `member_id` is required
+- `delta` must be an **integer**  
+  (supports + and − values for incrementing or decrementing points)
+
+Examples:
+
+**Valid request → succeeds**
+```json
+{
+  "member_id": "M-200",
+  "delta": 100
+}
+Response:
+
+json
+Copy code
+{
+  "member_id": "M-200",
+  "points": 100
+}
+Missing member_id → rejected
+
+json
+Copy code
+{ "delta": 100 }
+Response:
+
+json
+Copy code
+{ "error": "member_id required" }
+Non-integer delta → rejected
+
+json
+Copy code
+{
+  "member_id": "M-200",
+  "delta": "ONE_HUNDRED"
+}
+Response:
+
+json
+Copy code
+{ "error": "delta must be an integer" }
+🛡️ Security Value
+This hardening ensures /loyalty is:
+
+Authenticated
+
+Rate-limited
+
+Authorized by user identity
+
+Protected by partner API keys
+
+Programmatically validated
+
+Fraud-resistant
+
+A malicious caller cannot manipulate loyalty points without:
+
+valid partner credentials
+
+valid user identity (JWT)
+
+properly-formed JSON input
+
+passing WAF + usage-plan throttling
+
