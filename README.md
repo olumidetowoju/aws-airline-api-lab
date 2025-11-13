@@ -119,3 +119,189 @@ aws-airline-api-lab/
 ## 🧭 Next Steps
 - Open **[Day 1](modules/day01_introduction.md)** and begin.
 - When ready, commit your changes and push to GitHub.
+
+# 📘 10-Day Live Deployment Journey — Building the SkyBridge Airline API Platform
+
+This section documents the **complete 10-day engineering journey** of building a production-ready, serverless Airline API platform on AWS — executed live on a real AWS Free Tier account using:
+
+- **Amazon API Gateway (HTTP API)**
+- **AWS Lambda (Python 3.11)**
+- **Amazon DynamoDB**
+- **Amazon SNS**
+- **Amazon CloudWatch Logs & Alarms**
+- **AWS Config**
+- **AWS Budgets**
+- **IAM Role-Based Access Control**
+
+This provides both a **learning pathway** and a **technical audit trail**, demonstrating how each capability of SkyBridge Airline APIs was built from the ground up.
+
+---
+
+## 🟦 Day 1 — Environment, Region & Tagging Discipline
+
+**What we set up**
+
+- AWS Identity verified (`olumide-admin` in account `698135531490`)
+- Region standardized to **us-east-2 (Ohio)**
+- Artifacts bucket created:  
+  `skybridge-artifacts-<random>`
+- Project tagging baseline created:
+Project=SkyBridge
+Owner=olumidetowoju
+Env=lab
+CostCenter=free-tier
+
+yaml
+Copy code
+
+**Lesson:** Secure cloud deployments begin with environment governance: region control, naming consistency, tagging, and identity clarity.
+
+---
+
+## 🟧 Day 2 — Hello API (Lambda + API Gateway + IAM)
+
+**What we built**
+
+- IAM execution role: `skybridge-lambda-exec`
+- Lambda: `skybridge-hello`
+- API Gateway (HTTP API) → Lambda integration
+- Added `lambda:InvokeFunction` permission for API Gateway
+- Debugged:
+- Missing `zip` binary (installed via apt)
+- API 500 errors due to missing invoke permission
+- CLI payload issues (fixed with `--cli-binary-format raw-in-base64-out`)
+
+**Lesson:**  
+When API Gateway returns `500`, the **Lambda is usually fine** — it’s almost always a permissions or integration mapping issue. Always test Lambda directly.
+
+---
+
+## 🟩 Day 3 — Flight Status Query API (`GET /flight`)
+
+**What we built**
+
+- DynamoDB table: `skybridge-flights`
+- Lambda: `skybridge-get-flight`
+- Route: `GET /flight?flight_no=SKY101`
+- JSON returned flight status, gate, and delay codes
+
+**Lesson:**  
+Stateless read-driven patterns work best with DynamoDB. Parameter validation (`flight_no required`) avoids unnecessary errors.
+
+---
+
+## 🟪 Day 4 — Ticketing & Check-In APIs (`POST /ticket` & `POST /checkin`)
+
+**What we built**
+
+- DynamoDB table: `skybridge-orders`
+- Lambdas:
+- `skybridge-issue-ticket`
+- `skybridge-checkin`
+- Routes:
+- `POST /ticket`
+- `POST /checkin`
+- Fixed `$default` fallback routing so `/ticket` and `/checkin` call the correct Lambdas
+
+**Lesson:**  
+When multiple endpoints exist, you must explicitly bind **each route** to an integration, otherwise it silently falls back to `$default`.
+
+---
+
+## 🟨 Day 5 — Baggage Tracking API (Event-Driven Pattern)
+
+**What we built**
+
+- DynamoDB table: `skybridge-baggage`
+- SNS topic: `skybridge-baggage-events`
+- Lambda: `skybridge-baggage-track`
+- Route: `POST /baggage`
+
+**Lesson:**  
+Airline operational systems are event-driven. SNS gives you scalable, secure event messaging.
+
+---
+
+## 🟥 Day 6 — Partner Agency Booking API (`POST /booking`)
+
+**What we built**
+
+- Table: `skybridge-bookings`
+- Lambda: `skybridge-booking`
+- Route: `POST /booking`
+
+**Lesson:**  
+Partner integrations must be predictable, validated, and logged — serverless patterns shine here.
+
+---
+
+## 🟩 Day 7 — Loyalty API (`POST /loyalty`)
+
+**What we built**
+
+- Table: `skybridge-loyalty`
+- Lambda: `skybridge-loyalty`
+- Route: `POST /loyalty`
+- Uses DynamoDB **atomic ADD** for point adjustments
+
+**Lesson:**  
+Atomic operations simplify ledger-like systems without transactions.
+
+---
+
+## 🟦 Day 8 — Monitoring & Compliance
+
+**What we built**
+
+- CloudWatch Logs inspection (`aws logs tail`)
+- CloudWatch alarm on Lambda errors
+- AWS Config recorder enabled
+
+**Lesson:**  
+Logging + alarms + compliance = minimum for production.
+
+---
+
+## 🟧 Day 9 — Cost Governance (Free Tier Guardrail)
+
+**What we built**
+
+- AWS Budget: `SkyBridge-FreeTier-Guard` ($1/month)
+- Email alerts  
+- Enforced project tagging
+
+**Lesson:**  
+Cost governance is an engineering responsibility.
+
+---
+
+## 🟥 Day 10 — Troubleshooting & Cleanup
+
+**Troubleshooting learned**
+
+- API 500 → add invoke permission  
+- Lambda stuck → check `get-function-configuration`  
+- DynamoDB validation errors → fix schema  
+- CLI payload issues → add `--cli-binary-format raw-in-base64-out`  
+- Logs missing → tail logs after invocation  
+
+**Cleanup performed**
+
+- All SkyBridge Lambdas removed  
+- All SkyBridge DynamoDB tables removed  
+- API Gateway removed  
+- SNS topic deleted  
+- S3 artifacts bucket optionally deleted  
+
+---
+
+# 🛡️ Phase 2: Security Hardening Roadmap
+
+- Add authentication & JWT authorization  
+- Add WAF & rate limiting  
+- Add request validation  
+- Add KMS for data security  
+- Add CloudTrail Lake & GuardDuty  
+- Add Config rules & compliance  
+- Add CI/CD with GitHub Actions  
+
