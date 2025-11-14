@@ -488,6 +488,39 @@ We hardened `/loyalty` using the same layered approach as `/booking`:
 
 ---
 
+## 🎫 Hardening the `/ticket` Endpoint (Secure Ticket Issuance)
+
+The `/ticket` endpoint issues passenger tickets and writes them into the `skybridge-orders` DynamoDB table. Because ticket creation is a high-impact operation in any airline system, it was hardened using the same security layers applied to `/booking` and `/loyalty`.
+
+### 🔐 Security Layers Applied
+
+- **REST API Exposure:**  
+  `/ticket` is exposed on the **SkyBridge-REST** API under the `prod` stage.
+
+- **Lambda Integration:**  
+  Mapped to the `skybridge-issue-ticket` Lambda, responsible for:
+  - generating a unique `order_id`
+  - capturing `pax`, `flight_no`
+  - storing the ticket in `skybridge-orders`
+  - returning an `ISSUED` status
+
+- **Identity & Access Control:**  
+  `/ticket` now requires *both*:
+  - a valid **JWT** from Cognito (`Authorization: Bearer <token>`)
+  - a valid **API key** (`x-api-key: <key>`)
+  
+  This ensures only authenticated, authorized partners and users can issue tickets.
+
+- **Input Validation:**  
+  The endpoint accepts a strictly defined JSON body:
+  ```json
+  {
+    "pax": "string",
+    "flight_no": "string"
+  }
+
+---
+
 ### 🔑 Identity & Access Control
 
 - Added a **REST API resource** for `/loyalty`
