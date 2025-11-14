@@ -579,52 +579,45 @@ passing WAF + usage-plan throttling
 Below is the high-level architecture of the **SkyBridge Airline Partner API Platform**, showing all hardened components including WAF, REST API authorization layers, Lambda microservices, DynamoDB tables, SNS eventing, and governance tools.
 
 ```mermaid
-flowchart TD
-    %% Clients
-    C[Partner App / Agency Portal] --> WAF[WAFv2 - SkyBridgeAPIGuard]
-    I[Internal Ops Tool] --> WAF
+flowchart LR
+  %% Clients
+  P[Partner App / Agency Portal] --> WAF[WAFv2 SkyBridgeAPIGuard]
+  I[Internal Ops Tool] --> WAF
 
-    %% REST API
-    WAF --> REST[API Gateway REST API<br/>SkyBridge-REST /prod]
+  %% REST API entrypoint
+  WAF --> REST[REST API: SkyBridge-REST /prod]
 
-    %% Auth & Validation Layers
-    REST --> AK[API Keys & Usage Plan<br/>SkyBridgePartnerPlan]
-    REST --> JWT[Cognito User Pool<br/>SkyBridgePartnerPool]
-    REST --> VAL[Request Validators<br/>JSON Schemas]
+  %% Core endpoints
+  REST --> BKG[/POST /booking/]
+  REST --> LOY[/POST /loyalty/]
+  REST --> TKT[/POST /ticket/]
+  REST --> CHK[/POST /checkin/]
+  REST --> BAG[/POST /baggage/]
+  REST --> FLT[/GET /flight/]
 
-    %% Core Endpoints
-    REST --> BKG[/POST /booking/]
-    REST --> LOY[/POST /loyalty/]
-    REST --> TKT[/POST /ticket/]
-    REST --> CHK[/POST /checkin/]
-    REST --> BAG[/POST /baggage/]
-    REST --> FLT[/GET /flight/]
+  %% Lambda mapping
+  BKG --> L_BOOK[Lambda: skybridge-booking]
+  LOY --> L_LOY[Lambda: skybridge-loyalty]
+  TKT --> L_TKT[Lambda: skybridge-issue-ticket]
+  CHK --> L_CHK[Lambda: skybridge-checkin]
+  BAG --> L_BAG[Lambda: skybridge-baggage-track]
+  FLT --> L_FLT[Lambda: skybridge-get-flight]
 
-    %% Lambda Functions
-    BKG --> L_BOOK[Lambda skybridge-booking]
-    LOY --> L_LOY[Lambda skybridge-loyalty]
-    TKT --> L_TKT[Lambda skybridge-issue-ticket]
-    CHK --> L_CHK[Lambda skybridge-checkin]
-    BAG --> L_BAG[Lambda skybridge-baggage-track]
-    FLT --> L_FLT[Lambda skybridge-get-flight]
+  %% DynamoDB tables
+  L_BOOK --> D_BOOK[(DDB: skybridge-bookings)]
+  L_LOY  --> D_LOY[(DDB: skybridge-loyalty)]
+  L_TKT  --> D_ORD[(DDB: skybridge-orders)]
+  L_CHK  --> D_ORD
+  L_BAG  --> D_BAG[(DDB: skybridge-baggage)]
+  L_FLT  --> D_FLT[(DDB: skybridge-flights)]
 
-    %% DynamoDB Tables
-    L_BOOK --> D_BOOK[(DDB skybridge-bookings)]
-    L_LOY  --> D_LOY[(DDB skybridge-loyalty)]
-    L_TKT  --> D_ORD[(DDB skybridge-orders)]
-    L_CHK  --> D_ORD
-    L_BAG  --> D_BAG[(DDB skybridge-baggage)]
-    L_FLT  --> D_FLT[(DDB skybridge-flights)]
-
-    %% Events & Observability
-    L_BAG --> SNS_BAG[SNS skybridge-baggage-events]
-
-    L_BOOK --> CW[CloudWatch Logs]
-    L_LOY  --> CW
-    L_TKT  --> CW
-    L_CHK  --> CW
-    L_BAG  --> CW
-    L_FLT  --> CW
+  %% Logs
+  L_BOOK --> CW[CloudWatch Logs]
+  L_LOY  --> CW
+  L_TKT  --> CW
+  L_CHK  --> CW
+  L_BAG  --> CW
+  L_FLT  --> CW
 ```
 
 ## 🔐 Secure Booking Flow (Mermaid Sequence Diagram)
