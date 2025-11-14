@@ -675,11 +675,13 @@ flowchart LR
   HTTPAPI --> L_FLIGHT
   HTTPAPI --> L_TICKET
   HTTPAPI --> L_BAG
+```
+
 
 ## 🔐 Secure Booking Flow (Mermaid Sequence Diagram)
 
 The diagram below illustrates the **full secure request path** for the hardened `/booking` endpoint.  
-It highlights WAF protections, API Gateway validation layers, Cognito JWT authentication, API key enforcement, Lambda execution, DynamoDB persistence, and CloudWatch logging.
+It highlights WAF protections, API Gateway validation layers, Cognito JWT authentication, API key enforcement, schema validation, Lambda booking logic, and DynamoDB storage.
 
 ```mermaid
 sequenceDiagram
@@ -714,6 +716,8 @@ sequenceDiagram
 
     L->>CW: Log booking event
     A-->>C: 201 Created<br/>{"booking_id": "...", "status": "CREATED"}
+```
+
 
 ## 🌐 Secure Multi-Endpoint Architecture (All Airline APIs)
 
@@ -817,3 +821,4 @@ flowchart LR
   RESTAPI --> CW
   RESTAPI --> CFG
   RESTAPI --> BUD
+```
