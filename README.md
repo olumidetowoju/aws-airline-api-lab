@@ -542,115 +542,47 @@ The `skybridge-loyalty` Lambda enforces:
 - `delta` must be an **integer**  
   (supports + and − values for incrementing or decrementing points)
 
-Examples:
-
-**Valid request → succeeds**
-```json
-{
-  "member_id": "M-200",
-  "delta": 100
-}
-Response:
-
-json
-Copy code
-{
-  "member_id": "M-200",
-  "points": 100
-}
-Missing member_id → rejected
-
-json
-Copy code
-{ "delta": 100 }
-Response:
-
-json
-Copy code
-{ "error": "member_id required" }
-Non-integer delta → rejected
-
-json
-Copy code
-{
-  "member_id": "M-200",
-  "delta": "ONE_HUNDRED"
-}
-Response:
-
-json
-Copy code
-{ "error": "delta must be an integer" }
-🛡️ Security Value
-This hardening ensures /loyalty is:
-
-Authenticated
-
-Rate-limited
-
-Authorized by user identity
-
-Protected by partner API keys
-
-Programmatically validated
-
-Fraud-resistant
-
-A malicious caller cannot manipulate loyalty points without:
-
-valid partner credentials
-
-valid user identity (JWT)
-
-properly-formed JSON input
-
-passing WAF + usage-plan throttling
-
 
 # 🔐 Secure Airline API Architecture (SkyBridge)
 
 Below is the high-level architecture of the **SkyBridge Airline Partner API Platform**, showing all hardened components including WAF, REST API authorization layers, Lambda microservices, DynamoDB tables, SNS eventing, and governance tools.
 
 ```mermaid
-flowchart LR
-  %% Clients
-  P[Partner App / Agency Portal] --> WAF[WAFv2 SkyBridgeAPIGuard]
-  I[Internal Ops Tool] --> WAF
+flowchart TD
+    Client --> WAF
+    InternalTool --> WAF
 
-  %% REST API entrypoint
-  WAF --> REST[REST API: SkyBridge-REST /prod]
+    WAF --> RestAPI
 
-  %% Core endpoints
-  REST --> BKG[/POST /booking/]
-  REST --> LOY[/POST /loyalty/]
-  REST --> TKT[/POST /ticket/]
-  REST --> CHK[/POST /checkin/]
-  REST --> BAG[/POST /baggage/]
-  REST --> FLT[/GET /flight/]
+    RestAPI --> BookingEndpoint
+    RestAPI --> LoyaltyEndpoint
+    RestAPI --> TicketEndpoint
+    RestAPI --> CheckinEndpoint
+    RestAPI --> BaggageEndpoint
+    RestAPI --> FlightEndpoint
 
-  %% Lambda mapping
-  BKG --> L_BOOK[Lambda: skybridge-booking]
-  LOY --> L_LOY[Lambda: skybridge-loyalty]
-  TKT --> L_TKT[Lambda: skybridge-issue-ticket]
-  CHK --> L_CHK[Lambda: skybridge-checkin]
-  BAG --> L_BAG[Lambda: skybridge-baggage-track]
-  FLT --> L_FLT[Lambda: skybridge-get-flight]
+    BookingEndpoint --> BookingLambda
+    LoyaltyEndpoint --> LoyaltyLambda
+    TicketEndpoint --> TicketLambda
+    CheckinEndpoint --> CheckinLambda
+    BaggageEndpoint --> BaggageLambda
+    FlightEndpoint --> FlightLambda
 
-  %% DynamoDB tables
-  L_BOOK --> D_BOOK[(DDB: skybridge-bookings)]
-  L_LOY  --> D_LOY[(DDB: skybridge-loyalty)]
-  L_TKT  --> D_ORD[(DDB: skybridge-orders)]
-  L_CHK  --> D_ORD
-  L_BAG  --> D_BAG[(DDB: skybridge-baggage)]
-  L_FLT  --> D_FLT[(DDB: skybridge-flights)]
+    BookingLambda --> BookingsTable
+    LoyaltyLambda --> LoyaltyTable
+    TicketLambda --> OrdersTable
+    CheckinLambda --> OrdersTable
+    BaggageLambda --> BaggageTable
+    FlightLambda --> FlightsTable
 
-  %% Logs
-  L_BOOK --> CW[CloudWatch Logs]
-  L_LOY  --> CW
-  L_TKT  --> CW
-  L_CHK  --> CW
-  L_BAG  --> CW
-  L_FLT  --> CW
+    BaggageLambda --> BaggageTopic
+
+    BookingLambda --> Logs
+    LoyaltyLambda --> Logs
+    TicketLambda --> Logs
+    CheckinLambda --> Logs
+    BaggageLambda --> Logs
+    FlightLambda --> Logs
 ```
 
 ## 🔐 Secure Booking Flow (Mermaid Sequence Diagram)
