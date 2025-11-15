@@ -629,104 +629,45 @@ sequenceDiagram
 ## 🌐 Secure Multi-Endpoint Architecture (All Airline APIs)
 
 ```mermaid
-flowchart LR
-  %% Clients
-  subgraph Clients
-    P1[Partner App<br/>Agency Portal]
-    P2[Internal Ops Tool]
-  end
+flowchart TD
+    Client --> WAF
+    InternalTool --> WAF
 
-  %% Edge Security
-  P1 --> WAF[WAFv2<br/>SkyBridgeAPIGuard]
-  P2 --> WAF
+    WAF --> RestAPI
 
-  %% Hardened REST API Surface
-  WAF --> RESTAPI[API Gateway REST API<br/>SkyBridge-REST (/prod)]
+    RestAPI --> Auth
+    RestAPI --> ApiKeyCheck
+    RestAPI --> Validator
 
-  %% Auth Layers
-  subgraph ZeroTrust[Zero-Trust Controls]
-    direction TB
-    AK[API Keys & Usage Plan<br/>SkyBridgePartnerPlan]
-    JWT[Cognito User Pool<br/>SkyBridgePartnerPool]
-    VAL[Request Validators<br/>JSON Schemas]
-  end
+    RestAPI --> BookingEndpoint
+    RestAPI --> LoyaltyEndpoint
+    RestAPI --> TicketEndpoint
+    RestAPI --> CheckinEndpoint
+    RestAPI --> BaggageEndpoint
+    RestAPI --> FlightEndpoint
 
-  RESTAPI -->|x-api-key| AK
-  RESTAPI -->|Bearer JWT| JWT
-  RESTAPI -->|Body / Params| VAL
+    BookingEndpoint --> BookingLambda
+    LoyaltyEndpoint --> LoyaltyLambda
+    TicketEndpoint --> TicketLambda
+    CheckinEndpoint --> CheckinLambda
+    BaggageEndpoint --> BaggageLambda
+    FlightEndpoint --> FlightLambda
 
-  %% Partner Endpoints
-  subgraph PartnerEndpoints[Protected Partner Endpoints]
-    direction TB
-    BKG[/POST /booking/]
-    LOY[/POST /loyalty/]
-    TKT[/POST /ticket/]
-    CHK[/POST /checkin/]
-    BAG[/POST /baggage/]
-    FLT[/GET /flight/]
-  end
+    BookingLambda --> BookingsTable
+    LoyaltyLambda --> LoyaltyTable
+    TicketLambda --> OrdersTable
+    CheckinLambda --> OrdersTable
+    BaggageLambda --> BaggageTable
+    FlightLambda --> FlightsTable
 
-  RESTAPI --> BKG
-  RESTAPI --> LOY
-  RESTAPI --> TKT
-  RESTAPI --> CHK
-  RESTAPI --> BAG
-  RESTAPI --> FLT
+    BaggageLambda --> BaggageTopic
 
-  %% Lambda Layer
-  subgraph LambdaLayer[Lambda Functions]
-    direction TB
-    L_BOOKING[skybridge-booking]
-    L_LOYALTY[skybridge-loyalty]
-    L_TICKET_ISSUE[skybridge-issue-ticket]
-    L_CHECKIN[skybridge-checkin]
-    L_BAG[skybridge-baggage-track]
-    L_FLIGHT[skybridge-get-flight]
-  end
-
-  BKG --> L_BOOKING
-  LOY --> L_LOYALTY
-  TKT --> L_TICKET_ISSUE
-  CHK --> L_CHECKIN
-  BAG --> L_BAG
-  FLT --> L_FLIGHT
-
-  %% Data Layer
-  subgraph DataLayer[DynamoDB Tables]
-    direction TB
-    DDB_BOOK[skybridge-bookings]
-    DDB_LOY[skybridge-loyalty]
-    DDB_ORD[skybridge-orders]
-    DDB_BAG[skybridge-baggage]
-    DDB_FLT[skybridge-flights]
-  end
-
-  L_BOOKING --> DDB_BOOK
-  L_LOYALTY --> DDB_LOY
-  L_TICKET_ISSUE --> DDB_ORD
-  L_CHECKIN --> DDB_ORD
-  L_BAG --> DDB_BAG
-  L_FLIGHT --> DDB_FLT
-
-  %% Events & Observability
-  subgraph Events[Events & Observability]
-    SNS_BAG[SNS Topic<br/>skybridge-baggage-events]
-    CW[CloudWatch Logs & Metrics]
-    CFG[AWS Config]
-    BUD[AWS Budgets<br/>SkyBridge-FreeTier-Guard]
-  end
-
-  L_BAG --> SNS_BAG
-
-  L_BOOKING --> CW
-  L_LOYALTY --> CW
-  L_TICKET_ISSUE --> CW
-  L_CHECKIN --> CW
-  L_BAG --> CW
-  L_FLIGHT --> CW
-  RESTAPI --> CW
-  RESTAPI --> CFG
-  RESTAPI --> BUD
+    BookingLambda --> Logs
+    LoyaltyLambda --> Logs
+    TicketLambda --> Logs
+    CheckinLambda --> Logs
+    BaggageLambda --> Logs
+    FlightLambda --> Logs
 ```
 
 🏁 SkyBridge Airline API Platform — Full Lab Arc Wrap-Up
