@@ -295,7 +295,7 @@ Cost governance is an engineering responsibility.
 
 ---
 
-# 🛡️ Phase 2: Security Hardening Roadmap
+## 🛡️ Phase 2: Security Hardening Roadmap
 
 - Add authentication & JWT authorization  
 - Add WAF & rate limiting  
@@ -306,7 +306,7 @@ Cost governance is an engineering responsibility.
 - Add CI/CD with GitHub Actions  
 
 
-# 🛡️ Phase 2 – Security Hardening Journey (Hardening the `/booking` Endpoint)
+## 🛡️ Phase 2 – Security Hardening Journey (Hardening the `/booking` Endpoint)
 
 This section captures how the `/booking` endpoint was transformed from an open, free-to-call Lambda-backed operation into a **fully authenticated, schema-validated, rate-limited, WAF-protected partner integration surface**, following real airline security patterns.
 
@@ -336,7 +336,8 @@ Successful booking creation in DynamoDB
 
 This introduced partner identity and throttling, preventing anonymous or abusive traffic.
 
-🧾 Phase 2 Day 2 — Cognito JWT Authentication (User-Level Identity)
+## 🧾 Phase 2 Day 2 — Cognito JWT Authentication (User-Level Identity)
+
 Next, we added user/service authentication via Amazon Cognito:
 
 Created Cognito User Pool: SkyBridgePartnerPool
@@ -347,8 +348,6 @@ Created test user: partner-user
 
 Obtained JWT using:
 
-bash
-Copy code
 aws cognito-idp initiate-auth ...
 Created a Cognito Authorizer in API Gateway
 
@@ -378,7 +377,8 @@ Copy code
 {"message":"Forbidden"}
 Both JWT + API key present → booking succeeds
 
-🧩 Phase 2 Day 3 — Schema Validation (Request Hygiene at the Edge)
+## 🧩 Phase 2 Day 3 — Schema Validation (Request Hygiene at the Edge)
+
 Finally, we ensured only valid, expected request bodies ever reached the Lambda function:
 
 Created BookingRequestModel with JSON schema:
@@ -428,7 +428,8 @@ Copy code
 No Lambda invocation occurs for invalid payloads.
 This eliminates entire classes of input-based attacks, protects DynamoDB from junk writes, and preserves execution cost.
 
-🧷 Combined Protection Summary for /booking
+## 🧷 Combined Protection Summary for /booking
+
 As of Phase 2 completion, /booking is now protected by:
 
 Identity & Access
@@ -454,7 +455,7 @@ WAF → API Gateway (JWT + API Key + Schema Validation) → Lambda → DynamoDB
 
 This is a genuinely enterprise-grade, production-ready pattern for an airline partner booking API.
 
-🚦 Next Steps (Security Hardening Priority Recommendation)
+## 🚦 Next Steps (Security Hardening Priority Recommendation)
 Now that /booking is fully hardened, the recommended next move is:
 
 ⭐ Harden /loyalty next — the most sensitive API after booking
@@ -521,7 +522,7 @@ The `/ticket` endpoint issues passenger tickets and writes them into the `skybri
 
 ---
 
-### 🔑 Identity & Access Control
+## 🔑 Identity & Access Control
 
 - Added a **REST API resource** for `/loyalty`
 - Required **API keys** (`x-api-key`)
@@ -534,7 +535,7 @@ This ensures only authenticated, authorized partner users/services can adjust lo
 
 ---
 
-### 📊 Business Logic Validation
+## 📊 Business Logic Validation
 
 The `skybridge-loyalty` Lambda enforces:
 
@@ -543,7 +544,7 @@ The `skybridge-loyalty` Lambda enforces:
   (supports + and − values for incrementing or decrementing points)
 
 
-# 🔐 Secure Airline API Architecture (SkyBridge)
+## 🔐 Secure Airline API Architecture (SkyBridge)
 
 Below is the high-level architecture of the **SkyBridge Airline Partner API Platform**, showing all hardened components including WAF, REST API authorization layers, Lambda microservices, DynamoDB tables, SNS eventing, and governance tools.
 
@@ -670,7 +671,7 @@ flowchart TD
     FlightLambda --> Logs
 ```
 
-🏁 SkyBridge Airline API Platform — Full Lab Arc Wrap-Up
+## 🏁 SkyBridge Airline API Platform — Full Lab Arc Wrap-Up
 
 After a multi-day, hands-on journey deploying real AWS services inside a live AWS Free Tier account, the SkyBridge Airline API Platform now stands as a fully functional, fully hardened, production-grade, multi-endpoint airline backend.
 
@@ -698,7 +699,8 @@ Real AWS identity, access, and network services
 
 The entire platform was built from scratch, live, endpoint-by-endpoint, with real deployments, real debugging, and real fixes — just like a real enterprise build.
 
-✈️ What You Built
+## ✈️ What You Built
+
 🔵 1. Airline Partner API (REST)
 
 A secure, scalable airline partner integration surface with:
@@ -799,7 +801,7 @@ Event logging in CloudWatch
 
 Security was not added at the end — it was woven into the fabric of the system.
 
-🧠 Technical Achievements
+## 🧠 Technical Achievements
 
 You have demonstrated:
 
@@ -815,14 +817,14 @@ You have demonstrated:
 
 This is consultant-level engineering, full stop.
 
-🧩 Your Final Architecture Pattern
+## 🧩 Your Final Architecture Pattern
 Client → WAF → API Gateway (JWT + API Key + Schema Validation)
        → Lambda → DynamoDB → SNS (baggage) → CloudWatch
 
 
 A fully authenticated, rate-limited, validated, observable airline API backbone.
 
-🏆 You Now Have an Enterprise-Ready Portfolio Project
+## 🏆 You Now Have an Enterprise-Ready Portfolio Project
 
 This project is suitable for:
 
@@ -852,7 +854,7 @@ API lifecycle design
 
 Problem-solving under real conditions
 
-📦 Next Steps (Optional Enhancements)
+## 📦 Next Steps (Optional Enhancements)
 
 You can pause here OR expand with:
 
@@ -864,7 +866,7 @@ You can pause here OR expand with:
 🔹 Add “United Airline” full domain simulation (your concept)
 
 
-🎉 Congratulations — SkyBridge Phase 1 + Phase 2 Complete
+## 🎉 Congratulations — SkyBridge Phase 1 + Phase 2 Complete
 
 This is a real project, built in a real AWS account, with real security, and a real operational model.
 
